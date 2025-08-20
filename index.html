@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ultimate Futuristic Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+<style>
+body, html { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; font-family:'Orbitron', sans-serif; color:#0ff; }
+
+/* Particle background */
+#particles { position:fixed; width:100%; height:100%; top:0; left:0; z-index:-1; }
+canvas { width:100%; height:100%; display:block; }
+
+/* Intro */
+#intro { position:fixed; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#000; z-index:10; overflow:hidden; }
+#logo { font-size:5em; color:#0ff; text-shadow:0 0 20px #0ff,0 0 40px #0ff,0 0 80px #0ff; animation:logoSpin 3s ease forwards; }
+@keyframes logoSpin { 0% {transform:rotateY(0deg) scale(0);} 50% {transform:rotateY(180deg) scale(1.5);} 100% {transform:rotateY(360deg) scale(1);} }
+#intro-text { margin-top:20px; font-size:2em; color:#0ff; text-shadow:0 0 15px #0ff,0 0 30px #0ff; opacity:0; animation:textFade 2s forwards 3s; }
+@keyframes textFade { 0% {opacity:0;} 100% {opacity:1;} }
+
+/* Calculator panel */
+#calculator { display:none; width:420px; margin:auto; margin-top:50px; padding:30px; border-radius:25px; background: rgba(0,0,0,0.25); backdrop-filter: blur(15px); box-shadow:0 0 150px rgba(0,255,255,0.5); transform:translateY(150px) scale(0.8); opacity:0; transition: all 1s ease; }
+#calculator.show { transform:translateY(0) scale(1); opacity:1; }
+
+.display { background: rgba(0,0,0,0.35); padding:25px; font-size:2.5em; border-radius:25px; text-align:right; margin-bottom:20px; color:#0ff; box-shadow: inset 0 0 35px #0ff; overflow-x:auto; transition:0.2s all; }
+.display.flash { box-shadow:0 0 100px #0ff, inset 0 0 60px #0ff; }
+
+/* Buttons */
+.buttons { display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; }
+button { padding:22px; font-size:1.3em; border:none; border-radius:25px; background: rgba(0,255,255,0.05); color:#0ff; cursor:pointer; box-shadow:0 0 35px #0ff,0 0 12px #0ff inset; transition: all 0.2s; position:relative; }
+button:hover { transform: translateY(-8px) scale(1.1); box-shadow:0 0 120px #0ff,0 0 40px #0ff inset; }
+button.operator { background: rgba(255,0,255,0.2); color:#ff0; }
+button.equal { grid-column: span 2; background:#00ffcc; color:#000; }
+
+/* Button ripple */
+button:active::after { content:""; position:absolute; width:100%; height:100%; top:0; left:0; border-radius:25px; background: rgba(0,255,255,0.2); animation:ripple 0.3s; }
+@keyframes ripple { 0%{transform:scale(0); opacity:0.7;} 100%{transform:scale(1.5); opacity:0;} }
+
+/* Neon glow effect on key press */
+button.active { box-shadow:0 0 150px #0ff,0 0 50px #0ff inset; transform: scale(1.15); }
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<div id="intro">
+  <div id="logo">🚀 FUTURE CALC 🚀</div>
+  <div id="intro-text">Look at your future...</div>
+</div>
+
+<div id="calculator">
+  <div class="display" id="display">0</div>
+  <div class="buttons">
+    <button onclick="clearDisplay()">C</button>
+    <button onclick="backspace()">⌫</button>
+    <button class="operator" onclick="appendSymbol('%')">%</button>
+    <button class="operator" onclick="appendSymbol('/')">÷</button>
+
+    <button onclick="appendNumber('7')">7</button>
+    <button onclick="appendNumber('8')">8</button>
+    <button onclick="appendNumber('9')">9</button>
+    <button class="operator" onclick="appendSymbol('*')">×</button>
+
+    <button onclick="appendNumber('4')">4</button>
+    <button onclick="appendNumber('5')">5</button>
+    <button onclick="appendNumber('6')">6</button>
+    <button class="operator" onclick="appendSymbol('-')">-</button>
+
+    <button onclick="appendNumber('1')">1</button>
+    <button onclick="appendNumber('2')">2</button>
+    <button onclick="appendNumber('3')">3</button>
+    <button class="operator" onclick="appendSymbol('+')">+</button>
+
+    <button onclick="appendSymbol('±')">±</button>
+    <button onclick="appendNumber('0')">0</button>
+    <button onclick="appendSymbol('.')">.</button>
+    <button class="equal" onclick="calculate()">=</button>
+  </div>
+</div>
+
+<script>
+// Particle animation
+const canvas=document.getElementById('particles');
+const ctx=canvas.getContext('2d');
+let particlesArray=[];
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+class Particle{constructor(){this.x=Math.random()*canvas.width;this.y=Math.random()*canvas.height;this.size=Math.random()*2+1;this.speedX=Math.random()*1-0.5;this.speedY=Math.random()*1-0.5;}update(){this.x+=this.speedX;this.y+=this.speedY;if(this.x>canvas.width)this.x=0;if(this.x<0)this.x=canvas.width;if(this.y>canvas.height)this.y=0;if(this.y<0)this.y=canvas.height;}draw(){ctx.fillStyle="#0ff";ctx.shadowBlur=15;ctx.shadowColor="#0ff";ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);ctx.fill();}}
+
+function initParticles(){particlesArray=[];for(let i=0;i<180;i++){particlesArray.push(new Particle());}}
+function animateParticles(){ctx.clearRect(0,0,canvas.width,canvas.height);particlesArray.forEach(p=>{p.update();p.draw();});requestAnimationFrame(animateParticles);}
+initParticles();
+animateParticles();
+
+// Calculator
+const display=document.getElementById('display');
+const calculator=document.getElementById('calculator');
+const buttons=document.querySelectorAll('button');
+
+setTimeout(()=>{
+  document.getElementById('intro').style.display='none';
+  calculator.style.display='block';
+  setTimeout(()=>{ calculator.classList.add('show'); },50);
+},5000);
+
+function flashDisplay(){ display.classList.add('flash'); setTimeout(()=>display.classList.remove('flash'),150); }
+function appendNumber(n){ display.innerText=(display.innerText==='0'? n : display.innerText+n); flashDisplay(); }
+function appendSymbol(s){ if(s==='±'){ display.innerText=display.innerText.startsWith('-')? display.innerText.slice(1) : '-'+display.innerText; } else{ display.innerText+=s; } flashDisplay(); }
+function clearDisplay(){ display.innerText='0'; flashDisplay(); }
+function backspace(){ display.innerText=display.innerText.slice(0,-1)||'0'; flashDisplay(); }
+function calculate(){ try{ let expr=display.innerText.replace(/×/g,'*').replace(/÷/g,'/').replace(/%/g,'/100'); display.innerText=eval(expr);}catch{ display.innerText='Error'; } flashDisplay(); }
+
+// Keyboard input
+document.addEventListener('keydown',(e)=>{
+  buttons.forEach(b=>b.classList.remove('active'));
+  if(e.key>='0'&&e.key<='9'){ appendNumber(e.key); buttons.forEach(b=>{if(b.innerText===e.key)b.classList.add('active');}); }
+  else if(['+','-','*','/','.'].includes(e.key)){ appendSymbol(e.key); }
+  else if(e.key==='Enter'){ calculate(); }
+  else if(e.key==='Backspace'){ backspace(); }
+  else if(e.key==='c'||e.key==='C'){ clearDisplay(); }
+  else if(e.key==='%'){ appendSymbol('%'); }
+});
+</script>
+</body>
+</html>
